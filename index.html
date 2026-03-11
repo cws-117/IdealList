@@ -1,0 +1,708 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>이상형 리스트</title>
+<link href="https://fonts.googleapis.com/css2?family=Gaegu:wght@300;400;700&family=Nanum+Pen+Script&family=Pretendard:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/icon?family=Material+Icons+Outlined" rel="stylesheet">
+<style>
+  :root {
+    --primary: #8C6A5E;
+    --accent: #E8614A;
+    --diary-bg: #FCF9F2;
+    --diary-line: #E5DED0;
+    --diary-ink: #4A4543;
+    --surface: #FFFFFF;
+    --text-muted: #A09890;
+    --tag-bg: #F5EDE6;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    background: var(--diary-bg);
+    font-family: 'Pretendard', sans-serif;
+    color: var(--diary-ink);
+    min-height: 100vh;
+    padding-bottom: 100px;
+  }
+  .diary-pattern {
+    background-image: radial-gradient(#D1C7B7 1px, transparent 1px);
+    background-size: 24px 24px;
+  }
+
+  /* Header */
+  .header {
+    background: var(--diary-bg);
+    padding: 24px 24px 16px;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+  }
+  .header-top {
+    display: flex; align-items: center; justify-content: space-between;
+  }
+  .header-label {
+    font-family: 'Gaegu', cursive; font-size: 11px; color: var(--text-muted);
+    letter-spacing: 1.5px; text-transform: uppercase; margin-bottom: 4px;
+  }
+  .header-title {
+    font-family: 'Nanum Pen Script', cursive; font-size: 26px; font-weight: 400;
+    color: var(--diary-ink);
+  }
+  .header-title span { color: var(--accent); }
+  .share-btn {
+    background: var(--accent); color: white; border: none;
+    border-radius: 20px; padding: 7px 14px; font-size: 12px;
+    font-family: 'Pretendard', sans-serif; font-weight: 500;
+    cursor: pointer; transition: all 0.2s;
+  }
+  .share-btn:hover { background: #D4503A; transform: scale(1.04); }
+
+  /* Tabs */
+  .tabs {
+    display: flex; gap: 6px; padding: 12px 24px 0;
+    overflow-x: auto; scrollbar-width: none;
+  }
+  .tabs::-webkit-scrollbar { display: none; }
+  .tab {
+    background: transparent; border: 1.5px solid var(--diary-line);
+    border-radius: 20px; padding: 6px 14px; font-size: 13px;
+    font-family: 'Gaegu', cursive; font-weight: 400;
+    cursor: pointer; white-space: nowrap;
+    transition: all 0.2s; color: var(--text-muted);
+  }
+  .tab.active {
+    background: var(--primary); border-color: var(--primary); color: white;
+  }
+
+  /* Content */
+  .content { padding: 20px 24px; }
+  .category-section { display: none; }
+  .category-section.active { display: block; animation: fadeIn 0.25s ease; }
+  @keyframes fadeIn { from { opacity:0; transform:translateY(6px); } to { opacity:1; transform:translateY(0); } }
+
+  .section-sub {
+    font-family: 'Gaegu', cursive; font-size: 13px; color: var(--text-muted);
+    margin-bottom: 16px;
+  }
+
+  /* Item Card - diary style */
+  .item-card {
+    border-bottom: 1px dashed var(--diary-line);
+    padding: 14px 0; display: flex; align-items: flex-start; gap: 12px;
+    transition: all 0.2s;
+  }
+  .item-card:last-of-type { border-bottom: none; }
+  .item-bullet {
+    width: 8px; height: 8px; background: var(--primary);
+    border-radius: 50%; margin-top: 7px; flex-shrink: 0;
+  }
+  .item-body { flex: 1; }
+  .item-title {
+    font-family: 'Gaegu', cursive; font-size: 17px; font-weight: 700;
+    color: var(--diary-ink); margin-bottom: 3px;
+  }
+  .item-desc {
+    font-family: 'Gaegu', cursive; font-size: 14px; color: var(--text-muted);
+    line-height: 1.5;
+  }
+  .item-actions { display: flex; gap: 4px; flex-shrink: 0; margin-top: 2px; }
+  .icon-btn {
+    width: 28px; height: 28px; border-radius: 6px; border: none;
+    background: transparent; cursor: pointer; display: flex;
+    align-items: center; justify-content: center;
+    transition: all 0.15s; color: var(--text-muted); font-size: 16px;
+  }
+  .icon-btn:hover { background: var(--tag-bg); }
+  .icon-btn.delete:hover { background: #F5E0DC; color: var(--accent); }
+
+  /* Add Button */
+  .add-btn {
+    width: 100%; background: transparent;
+    border: 1.5px dashed var(--diary-line);
+    border-radius: 12px; padding: 14px; font-size: 14px;
+    color: var(--text-muted);
+    font-family: 'Gaegu', cursive; font-weight: 400;
+    cursor: pointer; transition: all 0.2s; margin-top: 12px;
+  }
+  .add-btn:hover { border-color: var(--primary); color: var(--primary); background: var(--tag-bg); }
+
+  /* Analyze Bar */
+  .analyze-bar {
+    position: fixed; bottom: 0; left: 0; right: 0;
+    background: var(--diary-bg);
+    padding: 14px 24px 20px; z-index: 100;
+  }
+  .analyze-btn {
+    width: 100%;
+    background: var(--diary-ink);
+    color: white; border: none; border-radius: 14px; padding: 16px;
+    font-size: 15px; font-family: 'Gaegu', cursive; font-weight: 700;
+    cursor: pointer; transition: all 0.2s;
+    display: flex; align-items: center; justify-content: center; gap: 8px;
+    letter-spacing: 0.5px;
+  }
+  .analyze-btn:hover { opacity: 0.9; transform: translateY(-1px); }
+  .analyze-btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+
+  /* Modal */
+  .modal-overlay {
+    display: none; position: fixed; inset: 0;
+    background: rgba(74,69,67,0.4); z-index: 500;
+    align-items: flex-end; backdrop-filter: blur(4px);
+  }
+  .modal-overlay.open { display: flex; }
+  .modal {
+    background: var(--surface); border-radius: 24px 24px 0 0;
+    padding: 32px 28px 40px; width: 100%;
+    max-height: 88vh; overflow-y: auto;
+    animation: slideUp 0.3s ease;
+  }
+  @keyframes slideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
+  .modal-title {
+    font-family: 'Nanum Pen Script', cursive; font-size: 24px;
+    font-weight: 400; margin-bottom: 4px; text-align: center;
+    color: var(--diary-ink);
+  }
+  .modal-sub {
+    font-family: 'Gaegu', cursive; font-size: 14px; color: var(--text-muted);
+    margin-bottom: 24px; text-align: center;
+  }
+
+  /* Add Modal - Icon Picker */
+  .form-group { margin-bottom: 18px; }
+  .form-label {
+    font-family: 'Gaegu', cursive; font-size: 13px; font-weight: 700;
+    color: var(--text-muted); margin-bottom: 8px; display: block;
+  }
+  .icon-picker {
+    display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px;
+  }
+  .icon-option {
+    aspect-ratio: 1; background: var(--diary-bg);
+    border: 1.5px solid var(--diary-line); border-radius: 12px;
+    cursor: pointer; display: flex; align-items: center; justify-content: center;
+    transition: all 0.15s; color: var(--text-muted);
+  }
+  .icon-option .material-icons-outlined { font-size: 24px; }
+  .icon-option.selected {
+    border-color: var(--accent); background: #FFF0EB; color: var(--accent);
+  }
+  .icon-option:hover { border-color: var(--primary); }
+
+  .form-input, .form-textarea {
+    width: 100%; background: var(--diary-bg); border: none;
+    border-bottom: 1.5px solid var(--diary-line);
+    border-radius: 0; padding: 12px 4px; font-size: 15px;
+    font-family: 'Gaegu', cursive; color: var(--diary-ink);
+    outline: none; transition: border-color 0.2s;
+  }
+  .form-input:focus, .form-textarea:focus { border-bottom-color: var(--primary); }
+  .form-input::placeholder, .form-textarea::placeholder {
+    color: var(--text-muted); font-family: 'Gaegu', cursive;
+  }
+  .form-textarea { resize: none; height: 80px; border: none; border-bottom: 1.5px solid var(--diary-line); }
+
+  .modal-btns { display: flex; gap: 10px; margin-top: 24px; }
+  .btn-cancel {
+    flex: 1; padding: 14px; background: var(--diary-bg);
+    border: none; border-radius: 12px;
+    font-size: 14px; font-family: 'Gaegu', cursive;
+    font-weight: 700; cursor: pointer; color: var(--text-muted);
+  }
+  .btn-save {
+    flex: 2; padding: 14px; background: var(--diary-ink); border: none;
+    border-radius: 12px; font-size: 14px; font-family: 'Gaegu', cursive;
+    font-weight: 700; cursor: pointer; color: white;
+    letter-spacing: 0.5px;
+  }
+  .btn-save:hover { opacity: 0.9; }
+
+  /* Result Modal - diary analysis */
+  .result-section {
+    margin-bottom: 20px; padding-bottom: 20px;
+    border-bottom: 1px dashed var(--diary-line);
+  }
+  .result-section:last-of-type { border-bottom: none; }
+  .result-section-title {
+    font-family: 'Gaegu', cursive; font-size: 13px; font-weight: 700;
+    color: var(--primary); margin-bottom: 10px;
+    display: flex; align-items: center; gap: 6px;
+  }
+  .result-section-title .material-icons-outlined { font-size: 18px; }
+  .result-summary-title {
+    font-family: 'Nanum Pen Script', cursive; font-size: 22px;
+    color: var(--accent); line-height: 1.4; margin-bottom: 8px;
+  }
+  .result-text {
+    font-family: 'Gaegu', cursive; font-size: 15px;
+    line-height: 1.8; color: var(--diary-ink); white-space: pre-wrap;
+  }
+
+  /* Keyword tags - handwritten style */
+  .keyword-tags { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 4px; }
+  .keyword-tag {
+    font-family: 'Gaegu', cursive; font-size: 14px; font-weight: 700;
+    color: var(--primary); padding: 4px 0;
+  }
+
+  /* Place cards */
+  .place-card {
+    display: flex; align-items: flex-start; gap: 10px;
+    padding: 10px 0;
+  }
+  .place-card .material-icons-outlined {
+    font-size: 20px; color: var(--primary); margin-top: 2px;
+  }
+  .place-name {
+    font-family: 'Gaegu', cursive; font-size: 15px; font-weight: 700;
+    color: var(--diary-ink);
+  }
+  .place-reason {
+    font-family: 'Gaegu', cursive; font-size: 13px; color: var(--text-muted);
+  }
+
+  /* Tip section */
+  .tip-section {
+    background: var(--tag-bg); border-radius: 12px; padding: 16px;
+    margin-top: 4px;
+  }
+  .tip-icon { display: flex; align-items: center; gap: 6px; margin-bottom: 6px; }
+  .tip-icon .material-icons-outlined { font-size: 18px; color: var(--accent); }
+  .tip-label {
+    font-family: 'Gaegu', cursive; font-size: 12px; font-weight: 700;
+    color: var(--accent);
+  }
+
+  /* Save button in result */
+  .btn-heart {
+    width: 100%; padding: 14px; background: var(--diary-bg);
+    border: 1.5px solid var(--diary-line); border-radius: 12px;
+    font-size: 15px; font-family: 'Gaegu', cursive; font-weight: 700;
+    cursor: pointer; color: var(--primary); margin-top: 8px;
+    display: flex; align-items: center; justify-content: center; gap: 6px;
+    transition: all 0.2s;
+  }
+  .btn-heart:hover { background: var(--tag-bg); border-color: var(--primary); }
+
+  /* Share Modal - minimal list */
+  .share-list { margin-top: 16px; }
+  .share-item {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 16px 4px; border-bottom: 1px solid var(--diary-line);
+    cursor: pointer; transition: all 0.15s;
+  }
+  .share-item:hover { background: var(--diary-bg); }
+  .share-item:last-child { border-bottom: none; }
+  .share-item-left { display: flex; align-items: center; gap: 12px; }
+  .share-item-left .material-icons-outlined { font-size: 20px; color: var(--diary-ink); }
+  .share-item-label {
+    font-family: 'Pretendard', sans-serif; font-size: 15px;
+    font-weight: 500; color: var(--diary-ink);
+  }
+  .share-item .material-icons-outlined.chevron {
+    font-size: 20px; color: var(--text-muted);
+  }
+  .btn-close-text {
+    width: 100%; padding: 14px; background: transparent; border: none;
+    font-size: 13px; font-family: 'Pretendard', sans-serif; font-weight: 500;
+    cursor: pointer; color: var(--text-muted); margin-top: 12px;
+    letter-spacing: 2px; text-transform: uppercase;
+  }
+  .btn-close-text:hover { color: var(--diary-ink); }
+
+  /* Loading */
+  .loading-wrap { text-align: center; padding: 40px 0; }
+  .loading-dots { display: flex; justify-content: center; gap: 8px; margin-bottom: 16px; }
+  .dot {
+    width: 8px; height: 8px; background: var(--primary);
+    border-radius: 50%; animation: bounce 1.2s infinite;
+  }
+  .dot:nth-child(2) { animation-delay: 0.2s; }
+  .dot:nth-child(3) { animation-delay: 0.4s; }
+  @keyframes bounce { 0%,60%,100% { transform:translateY(0); } 30% { transform:translateY(-8px); } }
+  .loading-text {
+    font-family: 'Gaegu', cursive; font-size: 15px;
+    color: var(--text-muted); line-height: 1.8;
+  }
+
+  /* Toast */
+  .toast {
+    position: fixed; bottom: 90px; left: 50%;
+    transform: translateX(-50%) translateY(20px);
+    background: var(--diary-ink); color: white; padding: 10px 20px;
+    border-radius: 20px; font-size: 13px; font-family: 'Gaegu', cursive;
+    font-weight: 700; opacity: 0; transition: all 0.3s; z-index: 999;
+    white-space: nowrap;
+  }
+  .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+  /* Empty state */
+  .empty { text-align: center; padding: 40px 0; color: var(--text-muted); }
+  .empty-icon { font-size: 36px; margin-bottom: 10px; }
+  .empty-text { font-family: 'Gaegu', cursive; font-size: 15px; }
+</style>
+</head>
+<body class="diary-pattern">
+
+<div class="header">
+  <div class="header-label">my dear diary</div>
+  <div class="header-top">
+    <div class="header-title">나의 <span>이상형</span> 리스트 💕</div>
+    <button class="share-btn" onclick="openShareModal()">공유하기</button>
+  </div>
+</div>
+
+<div class="tabs">
+  <div class="tab active" onclick="switchTab('looks',this)">👀 외모</div>
+  <div class="tab" onclick="switchTab('personality',this)">💬 성격</div>
+  <div class="tab" onclick="switchTab('values',this)">🌿 가치관</div>
+  <div class="tab" onclick="switchTab('lifestyle',this)">☕ 라이프</div>
+</div>
+
+<div class="content">
+  <div class="category-section active" id="cat-looks">
+    <div class="section-sub">내 눈을 사로잡는 첫 인상은 이런 느낌</div>
+    <div id="list-looks"></div>
+    <button class="add-btn" onclick="openAddModal('looks')">+ 새로운 항목 이름하기</button>
+  </div>
+  <div class="category-section" id="cat-personality">
+    <div class="section-sub">함께할 때 느껴지는 마음의 온도</div>
+    <div id="list-personality"></div>
+    <button class="add-btn" onclick="openAddModal('personality')">+ 새로운 항목 이름하기</button>
+  </div>
+  <div class="category-section" id="cat-values">
+    <div class="section-sub">같은 방향을 바라보는 사람</div>
+    <div id="list-values"></div>
+    <button class="add-btn" onclick="openAddModal('values')">+ 새로운 항목 이름하기</button>
+  </div>
+  <div class="category-section" id="cat-lifestyle">
+    <div class="section-sub">일상을 함께 나누고 싶은 순간들</div>
+    <div id="list-lifestyle"></div>
+    <button class="add-btn" onclick="openAddModal('lifestyle')">+ 새로운 항목 이름하기</button>
+  </div>
+</div>
+
+<!-- Analyze Bar -->
+<div class="analyze-bar">
+  <button class="analyze-btn" id="analyzeBtn" onclick="analyzeIdealType()">
+    ✨ AI가 분석하는 내 마음의 조각들
+  </button>
+</div>
+
+<!-- Add/Edit Modal -->
+<div class="modal-overlay" id="addModal" onclick="closeModalOnOverlay(event,'addModal')">
+  <div class="modal">
+    <div class="modal-title" id="modalTitle">항목 추가</div>
+    <div class="modal-sub">당신이 꿈꾸는 이상형의 조각</div>
+    <div class="form-group">
+      <label class="form-label">아이콘 선택</label>
+      <div class="icon-picker" id="iconPicker"></div>
+    </div>
+    <div class="form-group">
+      <label class="form-label">항목 이름</label>
+      <input class="form-input" id="itemTitle" placeholder="예: 다정한 웃음이?" maxlength="30">
+    </div>
+    <div class="form-group">
+      <label class="form-label">설명</label>
+      <textarea class="form-textarea" id="itemDesc" placeholder="조금 더 자세히 적어볼까요?"></textarea>
+    </div>
+    <div class="modal-btns">
+      <button class="btn-cancel" onclick="closeModal('addModal')">취소</button>
+      <button class="btn-save" onclick="saveItem()">저장하기</button>
+    </div>
+  </div>
+</div>
+
+<!-- Share Modal -->
+<div class="modal-overlay" id="shareModal" onclick="closeModalOnOverlay(event,'shareModal')">
+  <div class="modal">
+    <div class="modal-title">공유하기</div>
+    <div class="share-list">
+      <div class="share-item" onclick="shareLink()">
+        <div class="share-item-left">
+          <span class="material-icons-outlined">link</span>
+          <span class="share-item-label">링크 복사하기</span>
+        </div>
+        <span class="material-icons-outlined chevron">chevron_right</span>
+      </div>
+      <div class="share-item" onclick="shareImage()">
+        <div class="share-item-left">
+          <span class="material-icons-outlined">grid_view</span>
+          <span class="share-item-label">이미지로 저장하기</span>
+        </div>
+        <span class="material-icons-outlined chevron">chevron_right</span>
+      </div>
+    </div>
+    <button class="btn-close-text" onclick="closeModal('shareModal')">close</button>
+  </div>
+</div>
+
+<!-- AI Result Modal -->
+<div class="modal-overlay" id="resultModal" onclick="closeModalOnOverlay(event,'resultModal')">
+  <div class="modal">
+    <div class="modal-title">
+      <span class="material-icons-outlined" style="font-size:20px;vertical-align:middle;color:var(--accent)">draw</span>
+      나의 이상형 분석 일기
+    </div>
+    <div class="modal-sub">오늘의 마음 데이터를 꼼꼼히 적어봤어요</div>
+    <div id="resultContent"></div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+  const ICONS = [
+    { name:'favorite', label:'heart' },
+    { name:'local_fire_department', label:'fire' },
+    { name:'star', label:'star' },
+    { name:'settings', label:'setting' },
+    { name:'home', label:'home' },
+    { name:'spa', label:'spa' },
+    { name:'pets', label:'pets' },
+    { name:'restaurant', label:'food' },
+  ];
+  const CAT_LABELS = { looks:'외모', personality:'성격', values:'가치관', lifestyle:'라이프스타일' };
+
+  const DEFAULT_DATA = {
+    looks: [
+      { id:1, icon:'favorite', title:'청결하고 단정한 느낌', desc:'옷차림이나 헤어가 깔끔한 사람' },
+      { id:2, icon:'local_fire_department', title:'건강한 에너지가 느껴지는 체형', desc:'꾸준히 운동을 즐기는 사람이면 좋겠어' },
+    ],
+    personality: [
+      { id:3, icon:'star', title:'밝고 긍정적인 성격', desc:'함께 있으면 기분이 좋아지는 사람' },
+      { id:4, icon:'settings', title:'자기 주관이 뚜렷한 사람', desc:'우유부단하지 않고 결정력 있는' },
+    ],
+    values: [
+      { id:5, icon:'home', title:'가족을 소중히 여기는 사람', desc:'' },
+    ],
+    lifestyle: [
+      { id:6, icon:'spa', title:'취미가 있는 사람', desc:'자기만의 시간을 알차게 보내는' },
+    ]
+  };
+
+  function loadData() {
+    try {
+      const saved = localStorage.getItem('idealTypeData');
+      return saved ? JSON.parse(saved) : JSON.parse(JSON.stringify(DEFAULT_DATA));
+    } catch(e) { return JSON.parse(JSON.stringify(DEFAULT_DATA)); }
+  }
+  function saveData() { localStorage.setItem('idealTypeData', JSON.stringify(data)); }
+
+  let data = loadData();
+
+  let currentCat = 'looks', editingId = null, selectedIcon = 'favorite';
+
+  function renderAll() { Object.keys(data).forEach(c => renderList(c)); }
+
+  function renderList(cat) {
+    const el = document.getElementById('list-' + cat);
+    const items = data[cat];
+    if (!items.length) {
+      el.innerHTML = `<div class="empty"><div class="empty-icon">💭</div><div class="empty-text">아직 적어둔 이야기가 없어요.<br>하나씩 채워볼까요?</div></div>`;
+      return;
+    }
+    el.innerHTML = items.map(item => `
+      <div class="item-card">
+        <div class="item-bullet"></div>
+        <div class="item-body">
+          <div class="item-title">${item.title}</div>
+          ${item.desc ? `<div class="item-desc">${item.desc}</div>` : ''}
+        </div>
+        <div class="item-actions">
+          <button class="icon-btn" onclick="openEditModal('${cat}',${item.id})">
+            <span class="material-icons-outlined" style="font-size:16px">edit</span>
+          </button>
+          <button class="icon-btn delete" onclick="deleteItem('${cat}',${item.id})">
+            <span class="material-icons-outlined" style="font-size:16px">delete</span>
+          </button>
+        </div>
+      </div>
+    `).join('');
+  }
+
+  function switchTab(cat, el) {
+    currentCat = cat;
+    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+    el.classList.add('active');
+    document.querySelectorAll('.category-section').forEach(s => s.classList.remove('active'));
+    document.getElementById('cat-' + cat).classList.add('active');
+  }
+
+  function buildIconPicker() {
+    document.getElementById('iconPicker').innerHTML = ICONS.map(ic =>
+      `<div class="icon-option ${ic.name===selectedIcon?'selected':''}" onclick="selectIcon('${ic.name}',this)">
+        <span class="material-icons-outlined">${ic.name}</span>
+      </div>`
+    ).join('');
+  }
+
+  function selectIcon(name, el) {
+    selectedIcon = name;
+    document.querySelectorAll('.icon-option').forEach(x => x.classList.remove('selected'));
+    el.classList.add('selected');
+  }
+
+  function openAddModal(cat) {
+    currentCat = cat; editingId = null; selectedIcon = 'favorite';
+    document.getElementById('modalTitle').textContent = '항목 추가';
+    document.getElementById('itemTitle').value = '';
+    document.getElementById('itemDesc').value = '';
+    buildIconPicker();
+    document.getElementById('addModal').classList.add('open');
+  }
+
+  function openEditModal(cat, id) {
+    currentCat = cat; editingId = id;
+    const item = data[cat].find(i => i.id === id);
+    selectedIcon = item.icon;
+    document.getElementById('modalTitle').textContent = '항목 수정';
+    document.getElementById('itemTitle').value = item.title;
+    document.getElementById('itemDesc').value = item.desc;
+    buildIconPicker();
+    document.getElementById('addModal').classList.add('open');
+  }
+
+  function saveItem() {
+    const title = document.getElementById('itemTitle').value.trim();
+    if (!title) { showToast('항목 이름을 입력해주세요'); return; }
+    const desc = document.getElementById('itemDesc').value.trim();
+    if (editingId !== null) {
+      const item = data[currentCat].find(i => i.id === editingId);
+      Object.assign(item, { icon: selectedIcon, title, desc });
+      showToast('수정했어요');
+    } else {
+      data[currentCat].push({ id: Date.now(), icon: selectedIcon, title, desc });
+      showToast('추가했어요');
+    }
+    renderList(currentCat);
+    saveData();
+    closeModal('addModal');
+  }
+
+  function deleteItem(cat, id) {
+    data[cat] = data[cat].filter(i => i.id !== id);
+    renderList(cat);
+    saveData();
+    showToast('삭제했어요');
+  }
+
+  // ---- AI Analysis ----
+  async function analyzeIdealType() {
+    const totalItems = Object.values(data).flat();
+    if (totalItems.length < 2) { showToast('항목을 더 추가해주세요'); return; }
+
+    const btn = document.getElementById('analyzeBtn');
+    btn.disabled = true;
+    btn.textContent = '분석 중...';
+
+    document.getElementById('resultContent').innerHTML = `
+      <div class="loading-wrap">
+        <div class="loading-dots">
+          <div class="dot"></div><div class="dot"></div><div class="dot"></div>
+        </div>
+        <div class="loading-text">마음의 조각들을 모아보고 있어요...<br>어떤 사람인지 알아보는 중</div>
+      </div>`;
+    document.getElementById('resultModal').classList.add('open');
+
+    const listText = Object.entries(data).map(([cat, items]) => {
+      if (!items.length) return null;
+      return `[${CAT_LABELS[cat]}]\n` + items.map(i => `- ${i.title}${i.desc?': '+i.desc:''}`).join('\n');
+    }).filter(Boolean).join('\n\n');
+
+    const prompt = `사용자의 이상형 리스트:\n${listText}\n\n위 내용을 분석해서 JSON으로 응답해.\n{"personality_summary":"이 이상형이 어떤 사람인지 2~3문장으로 따뜻하게 요약","nickname":"별명 (예: 햇살을 닮은 현실주의자)","keyword_tags":["핵심 키워드 3~5개"],"where_to_meet":[{"place":"장소명","reason":"이유 한 줄"},{"place":"","reason":""},{"place":"","reason":""},{"place":"","reason":""},{"place":"","reason":""}],"love_tip":"현실적이고 재미있는 팁 한 줄"}`;
+
+    const GEMINI_API_KEY = 'AIzaSyCBvVmSMi35xpCGja-y9zLGrdqmMZDaVMQ';
+
+    try {
+      const resp = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-preview:generateContent?key=${GEMINI_API_KEY}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          contents: [{ parts: [{ text: prompt }] }],
+          generationConfig: { maxOutputTokens: 8192, responseMimeType: 'application/json' }
+        })
+      });
+      const json = await resp.json();
+      console.log('Gemini response:', json);
+      if (json.error) throw new Error(json.error.message);
+      const raw = json.candidates?.[0]?.content?.parts?.[0]?.text || '';
+      console.log('Raw text:', raw);
+      const cleaned = raw.replace(/```json\n?|```\n?/g,'').trim();
+      const result = JSON.parse(cleaned);
+      renderResult(result);
+    } catch(e) {
+      console.error('Analysis error:', e);
+      document.getElementById('resultContent').innerHTML = `
+        <div class="result-section">
+          <div class="result-text">분석 중 오류가 발생했어요.<br>${e.message || '잠시 후 다시 시도해주세요.'}</div>
+        </div>`;
+    } finally {
+      btn.disabled = false;
+      btn.innerHTML = '✨ AI가 분석하는 내 마음의 조각들';
+    }
+  }
+
+  function renderResult(r) {
+    const tagsHTML = (r.keyword_tags||[]).map(t => `<span class="keyword-tag">#${t}</span>`).join('  ');
+    const placesHTML = (r.where_to_meet||[]).map(p => `
+      <div class="place-card">
+        <span class="material-icons-outlined">coffee</span>
+        <div>
+          <div class="place-name">${p.place}</div>
+          <div class="place-reason">${p.reason}</div>
+        </div>
+      </div>`).join('');
+
+    document.getElementById('resultContent').innerHTML = `
+      <div class="result-section">
+        <div class="result-section-title">
+          <span class="material-icons-outlined">edit_note</span>
+          한 줄로 기록한 나의 취향
+        </div>
+        <div class="result-summary-title">"${r.nickname||''}"</div>
+        <div class="result-text">${r.personality_summary||''}</div>
+      </div>
+      <div class="result-section">
+        <div class="result-section-title">기억하고 싶은 키워드</div>
+        <div class="keyword-tags">${tagsHTML}</div>
+      </div>
+      <div class="result-section">
+        <div class="result-section-title">
+          <span class="material-icons-outlined">place</span>
+          함께 가고 싶은 곳들
+        </div>
+        ${placesHTML}
+      </div>
+      <div class="tip-section">
+        <div class="tip-icon">
+          <span class="material-icons-outlined">lightbulb</span>
+          <span class="tip-label">작은 팁 하나,</span>
+        </div>
+        <div class="result-text">${r.love_tip||''}</div>
+      </div>
+      <button class="btn-heart" onclick="closeModal('resultModal')">
+        내 마음속에 저장 <span class="material-icons-outlined" style="font-size:18px">favorite</span>
+      </button>`;
+  }
+
+  function openShareModal() { document.getElementById('shareModal').classList.add('open'); }
+  function shareLink() {
+    navigator.clipboard.writeText(window.location.href)
+      .then(() => { closeModal('shareModal'); showToast('링크가 복사됐어요'); })
+      .catch(() => showToast('복사에 실패했어요'));
+  }
+  function shareImage() { closeModal('shareModal'); showToast('화면을 캡처해서 공유해보세요'); }
+  function closeModal(id) { document.getElementById(id).classList.remove('open'); }
+  function closeModalOnOverlay(e, id) { if (e.target === document.getElementById(id)) closeModal(id); }
+  function showToast(msg) {
+    const t = document.getElementById('toast');
+    t.textContent = msg; t.classList.add('show');
+    setTimeout(() => t.classList.remove('show'), 2500);
+  }
+
+  renderAll();
+</script>
+</body>
+</html>
